@@ -2,8 +2,12 @@ name: Activation Security Tests
 
 on:
   push:
-    branches: ["main", "master"]
+    branches:
+      - main
+      - master
+
   pull_request:
+
   workflow_dispatch:
     inputs:
       run_api_smoke_test:
@@ -16,46 +20,78 @@ permissions:
   contents: read
 
 jobs:
+
+  # ==========================================================
+  # Unit Tests
+  # ==========================================================
+
   unit-tests:
     name: Python validation tests
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run unit tests
-        run: python -m unittest discover -s tests -v
+        run: |
+          python -m unittest discover -s tests -v
 
       - name: Run local harness
-        run: python main.py
+        run: |
+          python main.py
+
+
+  # ==========================================================
+  # Authorized API Smoke Test
+  # ==========================================================
 
   api-smoke-test:
     name: Authorized API smoke test
-    if: github.event_name == 'workflow_dispatch' && inputs.run_api_smoke_test == true && secrets.API_URL != ''
+
+    if: github.event_name == 'workflow_dispatch' && inputs.run_api_smoke_test == true
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check API URL secret
+        env:
+          API_URL: ${{ secrets.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "ERROR: API_URL secret is not configured."
+            exit 1
+          fi
+
+          echo "API_URL secret is configured."
+
 
       - name: Run one authorized smoke test
         env:
@@ -66,8 +102,14 @@ jobs:
           from src.api_client import send_test_request
           from src.analyzer import analyze_response
 
+          print("Generating test value...")
+
           code = generate_test_code()
+
+          print("Sending one authorized smoke-test request...")
+
           response = send_test_request(code)
+
           result = analyze_response(response)
 
           print(f"HTTP status: {result['status_code']}")
@@ -75,4 +117,6 @@ jobs:
 
           if result["status_code"] >= 500:
               raise SystemExit("Server returned a 5xx response.")
+
+          print("Smoke test completed.")
           PY
