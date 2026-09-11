@@ -1,15 +1,15 @@
-# Activation Security Tester
+# Activation Security Tester — GitHub Actions
 
-Safe test harness for an activation-code API that you own or are explicitly authorized to test.
+A safe Python test harness for an activation-code API that you own or are explicitly authorized to test.
 
-## Features
-- 16-digit code validation
-- Rejects values below `1111111111111111`
-- Separate generator, validator, payload and API client
-- Sends only a single authorized test request per run
-- No brute-force or infinite guessing loop
+## What it does
+- Validates 16-digit activation-code format.
+- Rejects values below `1111111111111111`.
+- Runs automated unit tests in GitHub Actions.
+- Optionally runs one authorized API smoke test when `API_URL` is configured as a GitHub secret.
+- Does not brute-force or infinitely guess activation codes.
 
-## Setup
+## Local setup
 
 ```bash
 python -m venv .venv
@@ -20,13 +20,29 @@ Windows:
 .venv\Scripts\activate
 ```
 
-Install dependencies:
+Install:
 ```bash
 pip install -r requirements.txt
 ```
 
-Set your authorized test endpoint in `src/config.py`, then run:
+Run tests:
+```bash
+python -m unittest discover -s tests -v
+```
 
+Run the local test harness:
 ```bash
 python main.py
 ```
+
+## GitHub Actions
+
+Push this repository to GitHub. The workflow in `.github/workflows/test.yml` runs automatically on pushes and pull requests.
+
+For an optional API smoke test, add a repository secret:
+
+- `API_URL` — your authorized test/staging endpoint
+
+Then manually run the workflow and enable the smoke test input.
+
+Never commit real activation codes, API tokens, passwords, or private credentials.

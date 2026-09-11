@@ -9,7 +9,7 @@ from .validator import is_valid_code
 
 
 def create_payload(activation_code):
-    """Create API payload for an authorized test."""
+    """Create payload for an authorized test request."""
     if not is_valid_code(activation_code):
         raise ValueError("Invalid activation code")
 
